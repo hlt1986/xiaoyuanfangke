@@ -1,0 +1,42 @@
+# Windows / macOS system files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Office temporary / lock files
+~$*.doc
+~$*.docx
+~$*.xls
+~$*.xlsx
+~$*.ppt
+~$*.pptx
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Editor / IDE local settings
+.vscode/
+.idea/
+
+# Common cache/build folders
+.cache/
+tmp/
+temp/
+dist/
+build/
+
+# Python cache, if scripts are added later
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Node dependencies, if a frontend/tooling project is added later
+node_modules/
