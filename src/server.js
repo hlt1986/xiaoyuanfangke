@@ -685,9 +685,31 @@ app.post('/admin/departments/:id/delete', requireAdmin, asyncHandler(async (req,
 }));
 
 app.get('/admin/users', requireAdmin, asyncHandler(async (req, res) => {
-  const [users] = await pool.query('SELECT u.id, u.username, u.real_name, u.role, u.department_name, u.can_approve, u.enabled, u.created_at FROM users u ORDER BY u.id ASC');
+  const { role = '', department_id = '' } = req.query;
+  const whereParts = [];
+  const params = [];
+  if (['ADMIN', 'SECURITY', 'DEPARTMENT'].includes(role)) {
+    whereParts.push('u.role = ?');
+    params.push(role);
+  }
+  if (department_id) {
+    if (department_id === 'NONE') {
+      whereParts.push('u.department_id IS NULL');
+    } else {
+      whereParts.push('u.department_id = ?');
+      params.push(department_id);
+    }
+  }
+  const where = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
+  const [users] = await pool.query(
+    `SELECT u.id, u.username, u.real_name, u.role, u.department_id, u.department_name, u.can_approve, u.enabled, u.created_at
+     FROM users u
+     ${where}
+     ORDER BY u.id ASC`,
+    params
+  );
   const [departments] = await pool.query('SELECT * FROM departments WHERE enabled = 1 ORDER BY id ASC');
-  res.render('admin-users', { users, departments });
+  res.render('admin-users', { users, departments, filters: { role, department_id } });
 }));
 
 app.post('/admin/users', requireAdmin, asyncHandler(async (req, res) => {

@@ -30,6 +30,38 @@
 </form>
 
 <section class="card">
+  <div class="section-title">
+    <div>
+      <h2>账号列表</h2>
+      <p class="muted">可按角色和所属部门筛选账号。</p>
+    </div>
+  </div>
+  <form class="filter-form" method="get" action="/admin/users">
+    <label>
+      角色
+      <select name="role">
+        <option value="" <%= !filters.role ? 'selected' : '' %>>全部角色</option>
+        <option value="ADMIN" <%= filters.role === 'ADMIN' ? 'selected' : '' %>>系统管理员</option>
+        <option value="SECURITY" <%= filters.role === 'SECURITY' ? 'selected' : '' %>>保卫处账号</option>
+        <option value="DEPARTMENT" <%= filters.role === 'DEPARTMENT' ? 'selected' : '' %>>部门账号</option>
+      </select>
+    </label>
+    <label>
+      所属部门
+      <select name="department_id">
+        <option value="" <%= !filters.department_id ? 'selected' : '' %>>全部部门</option>
+        <option value="NONE" <%= filters.department_id === 'NONE' ? 'selected' : '' %>>未绑定部门</option>
+        <% departments.forEach(dept => { %>
+          <option value="<%= dept.id %>" <%= String(filters.department_id) === String(dept.id) ? 'selected' : '' %>><%= dept.name %></option>
+        <% }) %>
+      </select>
+    </label>
+    <div class="filter-actions">
+      <button type="submit">筛选</button>
+      <a class="button ghost" href="/admin/users">重置</a>
+    </div>
+  </form>
+
   <table>
     <thead>
       <tr>
@@ -62,7 +94,7 @@
               <select name="department_id">
                 <option value="">系统管理员可不选</option>
                 <% departments.forEach(dept => { %>
-                  <option value="<%= dept.id %>" <%= user.department_name === dept.name ? 'selected' : '' %>><%= dept.name %></option>
+                  <option value="<%= dept.id %>" <%= Number(user.department_id) === Number(dept.id) ? 'selected' : '' %>><%= dept.name %></option>
                 <% }) %>
               </select>
             </td>
@@ -78,6 +110,9 @@
             </td>
         </tr>
       <% }) %>
+      <% if (users.length === 0) { %>
+        <tr><td colspan="9" class="empty">当前筛选条件下暂无账号</td></tr>
+      <% } %>
     </tbody>
   </table>
 </section>
