@@ -44,6 +44,16 @@ function flash(req, type, message) {
   req.session.flash = { type, message };
 }
 
+function asyncHandler(handler) {
+  return (req, res, next) => {
+    Promise.resolve(handler(req, res, next)).catch(next);
+  };
+}
+
+function requiredText(value) {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
 function requireLogin(req, res, next) {
   if (!req.session.user) {
     return res.redirect('/login');
@@ -76,7 +86,9 @@ async function initDatabase() {
     multipleStatements: true
   });
 
-  await connection.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+  await connection.query(
+    `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`
+  );
   await connection.end();
 
   pool = mysql.createPool({
@@ -175,12 +187,12 @@ async function applicationByToken(token) {
   return application;
 }
 
-app.get('/', async (req, res) => {
+app.get('/', asyncHandler(async (req, res) => {
   const [departments] = await pool.query('SELECT * FROM departments WHERE enabled = 1 ORDER BY id ASC');
   res.render('apply', { departments, form: {} });
-});
+}));
 
-app.post('/applications', async (req, res) => {
+app.post('/applications', asyncHandler(async (req, res) => {
   const {
     department_id,
     applicant_name,
@@ -194,13 +206,37 @@ app.post('/applications', async (req, res) => {
     visit_end
   } = req.body;
 
+  const requiredFields = [
+    applicant_name,
+    applicant_phone,
+    visitor_name,
+    visitor_gender,
+    visitor_phone,
+    reason,
+    visit_start,
+    visit_end
+  ];
+
+  if (!department_id || requiredFields.some((value) => !requiredText(value))) {
+    flash(req, 'error', '请完整填写申请信息');
+    return res.redirect('/');
+  }
+
   const [[department]] = await pool.query('SELECT * FROM departments WHERE id = ? AND enabled = 1', [department_id]);
   if (!department) {
     flash(req, 'error', '请选择有效部门');
     return res.redirect('/');
   }
 
-  if (dayjs(visit_end).isBefore(dayjs(visit_start))) {
+  const startTime = dayjs(visit_start);
+  const endTime = dayjs(visit_end);
+
+  if (!startTime.isValid() || !endTime.isValid()) {
+    flash(req, 'error', '请选择有效的到访时间');
+    return res.redirect('/');
+  }
+
+  if (endTime.isBefore(startTime)) {
     flash(req, 'error', '结束时间不能早于开始时间');
     return res.redirect('/');
   }
@@ -221,27 +257,27 @@ app.post('/applications', async (req, res) => {
       visitor_phone.trim(),
       (license_plate || '').trim(),
       reason.trim(),
-      normalizeDateTime(visit_start),
-      normalizeDateTime(visit_end)
+      normalizeDateTime(startTime),
+      normalizeDateTime(endTime)
     ]
   );
 
   res.redirect(`/applications/${token}`);
-});
+}));
 
-app.get('/applications/:token', async (req, res) => {
+app.get('/applications/:token', asyncHandler(async (req, res) => {
   const application = await applicationByToken(req.params.token);
   if (!application) return res.status(404).render('error', { message: '未找到申请信息' });
   const qrUrl = `${BASE_URL}/applications/${application.token}`;
   const qrDataUrl = await QRCode.toDataURL(qrUrl, { margin: 1, width: 240 });
   res.render('application-detail', { application, qrUrl, qrDataUrl });
-});
+}));
 
 app.get('/login', (req, res) => {
   res.render('login');
 });
 
-app.post('/login', async (req, res) => {
+app.post('/login', asyncHandler(async (req, res) => {
   const { username, password } = req.body;
   const [[user]] = await pool.query('SELECT * FROM users WHERE username = ? AND enabled = 1', [username]);
   if (!user || !(await bcrypt.compare(password, user.password_hash))) {
@@ -255,13 +291,13 @@ app.post('/login', async (req, res) => {
     role: user.role
   };
   res.redirect('/dashboard');
-});
+}));
 
 app.post('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/login'));
 });
 
-app.get('/dashboard', requireLogin, async (req, res) => {
+app.get('/dashboard', requireLogin, asyncHandler(async (req, res) => {
   const [[stats]] = await pool.query(`
     SELECT
       SUM(status = 'PENDING') AS pending,
@@ -272,9 +308,9 @@ app.get('/dashboard', requireLogin, async (req, res) => {
   `);
   const [recent] = await pool.query('SELECT * FROM visitor_applications ORDER BY created_at DESC LIMIT 10');
   res.render('dashboard', { stats, recent });
-});
+}));
 
-app.get('/approvals', canApprove, async (req, res) => {
+app.get('/approvals', canApprove, asyncHandler(async (req, res) => {
   const status = req.query.status || 'PENDING';
   const params = [];
   let sql = 'SELECT * FROM visitor_applications';
@@ -285,9 +321,9 @@ app.get('/approvals', canApprove, async (req, res) => {
   sql += ' ORDER BY created_at DESC';
   const [applications] = await pool.query(sql, params);
   res.render('approvals', { applications, status });
-});
+}));
 
-app.post('/approvals/:id/approve', canApprove, async (req, res) => {
+app.post('/approvals/:id/approve', canApprove, asyncHandler(async (req, res) => {
   await pool.query(
     `UPDATE visitor_applications
      SET status = 'APPROVED', reject_reason = NULL, approver_id = ?, approver_name = ?, approved_at = NOW()
@@ -296,9 +332,9 @@ app.post('/approvals/:id/approve', canApprove, async (req, res) => {
   );
   flash(req, 'success', '申请已通过');
   res.redirect('/approvals');
-});
+}));
 
-app.post('/approvals/:id/reject', canApprove, async (req, res) => {
+app.post('/approvals/:id/reject', canApprove, asyncHandler(async (req, res) => {
   await pool.query(
     `UPDATE visitor_applications
      SET status = 'REJECTED', reject_reason = ?, approver_id = ?, approver_name = ?, approved_at = NOW()
@@ -307,20 +343,20 @@ app.post('/approvals/:id/reject', canApprove, async (req, res) => {
   );
   flash(req, 'success', '申请已打回');
   res.redirect('/approvals');
-});
+}));
 
-app.get('/admin/departments', requireAdmin, async (req, res) => {
+app.get('/admin/departments', requireAdmin, asyncHandler(async (req, res) => {
   const [departments] = await pool.query('SELECT * FROM departments ORDER BY id ASC');
   res.render('admin-departments', { departments });
-});
+}));
 
-app.post('/admin/departments', requireAdmin, async (req, res) => {
+app.post('/admin/departments', requireAdmin, asyncHandler(async (req, res) => {
   await pool.query('INSERT INTO departments (name) VALUES (?)', [req.body.name.trim()]);
   flash(req, 'success', '部门已新增');
   res.redirect('/admin/departments');
-});
+}));
 
-app.post('/admin/departments/:id', requireAdmin, async (req, res) => {
+app.post('/admin/departments/:id', requireAdmin, asyncHandler(async (req, res) => {
   await pool.query('UPDATE departments SET name = ?, enabled = ? WHERE id = ?', [
     req.body.name.trim(),
     req.body.enabled ? 1 : 0,
@@ -328,9 +364,9 @@ app.post('/admin/departments/:id', requireAdmin, async (req, res) => {
   ]);
   flash(req, 'success', '部门已更新');
   res.redirect('/admin/departments');
-});
+}));
 
-app.post('/admin/departments/:id/delete', requireAdmin, async (req, res) => {
+app.post('/admin/departments/:id/delete', requireAdmin, asyncHandler(async (req, res) => {
   const [[used]] = await pool.query('SELECT COUNT(*) AS count FROM visitor_applications WHERE department_id = ?', [req.params.id]);
   if (used.count > 0) {
     flash(req, 'error', '该部门已有申请记录，不能删除，可改为停用');
@@ -339,14 +375,14 @@ app.post('/admin/departments/:id/delete', requireAdmin, async (req, res) => {
     flash(req, 'success', '部门已删除');
   }
   res.redirect('/admin/departments');
-});
+}));
 
-app.get('/admin/users', requireAdmin, async (req, res) => {
+app.get('/admin/users', requireAdmin, asyncHandler(async (req, res) => {
   const [users] = await pool.query('SELECT id, username, real_name, role, enabled, created_at FROM users ORDER BY id ASC');
   res.render('admin-users', { users });
-});
+}));
 
-app.post('/admin/users', requireAdmin, async (req, res) => {
+app.post('/admin/users', requireAdmin, asyncHandler(async (req, res) => {
   const passwordHash = await bcrypt.hash(req.body.password, 10);
   await pool.query(
     'INSERT INTO users (username, password_hash, real_name, role, enabled) VALUES (?, ?, ?, ?, ?)',
@@ -354,9 +390,9 @@ app.post('/admin/users', requireAdmin, async (req, res) => {
   );
   flash(req, 'success', '账号已新增');
   res.redirect('/admin/users');
-});
+}));
 
-app.post('/admin/users/:id', requireAdmin, async (req, res) => {
+app.post('/admin/users/:id', requireAdmin, asyncHandler(async (req, res) => {
   if (req.body.password) {
     const passwordHash = await bcrypt.hash(req.body.password, 10);
     await pool.query(
@@ -371,9 +407,9 @@ app.post('/admin/users/:id', requireAdmin, async (req, res) => {
   }
   flash(req, 'success', '账号已更新');
   res.redirect('/admin/users');
-});
+}));
 
-app.post('/admin/users/:id/delete', requireAdmin, async (req, res) => {
+app.post('/admin/users/:id/delete', requireAdmin, asyncHandler(async (req, res) => {
   if (Number(req.params.id) === req.session.user.id) {
     flash(req, 'error', '不能删除当前登录账号');
   } else {
@@ -381,35 +417,38 @@ app.post('/admin/users/:id/delete', requireAdmin, async (req, res) => {
     flash(req, 'success', '账号已删除');
   }
   res.redirect('/admin/users');
-});
+}));
 
-app.get('/admin/applications', requireAdmin, async (req, res) => {
+app.get('/admin/applications', requireAdmin, asyncHandler(async (req, res) => {
   const [applications] = await pool.query('SELECT * FROM visitor_applications ORDER BY created_at DESC');
   res.render('admin-applications', { applications });
-});
+}));
 
-app.post('/admin/applications/:id/delete', requireAdmin, async (req, res) => {
+app.post('/admin/applications/:id/delete', requireAdmin, asyncHandler(async (req, res) => {
   await pool.query('DELETE FROM visitor_applications WHERE id = ?', [req.params.id]);
   flash(req, 'success', '申请记录已删除');
   res.redirect('/admin/applications');
-});
+}));
 
-app.get('/screen', async (req, res) => {
+app.get('/screen', asyncHandler(async (req, res) => {
   const [applications] = await pool.query(
     `SELECT * FROM visitor_applications
      WHERE status = 'APPROVED' AND visit_end >= NOW()
      ORDER BY visit_start ASC`
   );
   res.render('screen', { applications });
-});
+}));
 
-app.get('/health', async (req, res) => {
+app.get('/health', asyncHandler(async (req, res) => {
   await pool.query('SELECT 1');
   res.json({ ok: true });
-});
+}));
 
 app.use((err, req, res, next) => {
   console.error(err);
+  if (res.headersSent) {
+    return next(err);
+  }
   res.status(500).render('error', { message: err.message || '服务器发生错误' });
 });
 
