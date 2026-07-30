@@ -22,6 +22,9 @@ Desktop.ini
 *.log
 logs/
 
+# Runtime process files
+.xiaoyuanfangke.pid
+
 # Local environment secrets
 .env
 

@@ -52,6 +52,24 @@
 pnpm check:db
 ```
 
+## 一键启动和停止
+
+Windows 下可直接双击：
+
+- `启动网站.bat`
+- `停止网站.bat`
+
+启动脚本会检查 MySQL `localhost:3306`，如果未运行，会尝试启动常见的 MySQL 服务名，例如 `MySQL80`、`MySQL`、`MariaDB`。随后会启动网站并写入进程文件。
+
+停止脚本只停止本项目的网站进程，不会关闭 MySQL，避免影响本机其他系统。
+
+运行日志位于：
+
+```text
+logs/app.out.log
+logs/app.err.log
+```
+
 ## 默认账号
 
 | 角色 | 用户名 | 密码 |
