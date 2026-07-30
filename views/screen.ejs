@@ -3,10 +3,17 @@
 <section class="screen-head">
   <div>
     <p class="eyebrow">门卫核验大屏</p>
-    <h1>当前有效访客</h1>
+    <h1>已通过访客</h1>
+    <p class="muted">本页面仅展示最终审批通过的访客，可切换当前有效、即将到访、已失效等状态，并每 30 秒自动刷新。</p>
   </div>
   <div class="clock"><%= dayjs().format('YYYY-MM-DD HH:mm') %></div>
 </section>
+
+<div class="tabs screen-tabs">
+  <% Object.keys(screenFilterLabels).forEach(key => { %>
+    <a class="<%= filter === key ? 'active' : '' %>" href="/screen?filter=<%= key %>"><%= screenFilterLabels[key] %></a>
+  <% }) %>
+</div>
 
 <section class="screen-grid">
   <% applications.forEach(item => { %>
@@ -15,21 +22,25 @@
         <h2><%= item.visitor_name %></h2>
         <span><%= item.department_name %></span>
       </div>
+      <p><strong>当前分类：</strong><%= screenFilterLabels[filter] %></p>
       <p><strong>访客电话：</strong><%= item.visitor_phone %></p>
       <p><strong>车牌号：</strong><%= item.license_plate || '无' %></p>
       <p><strong>申请人：</strong><%= item.applicant_name %> / <%= item.applicant_phone %></p>
       <p><strong>有效时间：</strong><%= dayjs(item.visit_start).format('MM-DD HH:mm') %> 至 <%= dayjs(item.visit_end).format('MM-DD HH:mm') %></p>
       <p><strong>事由：</strong><%= item.reason %></p>
-      <p class="approved">已审批：<%= item.approver_name %>，<%= dayjs(item.approved_at).format('MM-DD HH:mm') %></p>
+      <p class="approved">已通过：<%= item.security_approver_name || item.approver_name || '-' %>，<%= item.security_approved_at || item.approved_at ? dayjs(item.security_approved_at || item.approved_at).format('MM-DD HH:mm') : '-' %></p>
     </article>
   <% }) %>
   <% if (applications.length === 0) { %>
-    <div class="card empty">当前暂无已审批且有效的访客信息</div>
+    <div class="card empty">当前筛选条件下暂无已通过访客</div>
   <% } %>
 </section>
 
 <script>
-  setTimeout(() => location.reload(), 60000);
+  const currentFilter = new URLSearchParams(location.search).get('filter') || 'effective';
+  setTimeout(() => {
+    location.href = `/screen?filter=${encodeURIComponent(currentFilter)}`;
+  }, 30000);
 </script>
 
 <%- include('partials/footer') %>

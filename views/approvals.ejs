@@ -1,12 +1,20 @@
-<%- include('partials/header', { title: '审批管理' }) %>
+<%- include('partials/header', { title: '审批查看' }) %>
 
 <div class="section-title">
-  <h1>访客审批</h1>
+  <div>
+    <h1>访客审批</h1>
+    <% if (currentUser.role === 'DEPARTMENT') { %>
+      <p class="muted">当前仅显示 <%= currentUser.departmentName || '本部门' %> 的申请；可查看本部门全部审批记录。</p>
+    <% } else { %>
+      <p class="muted">保卫处和管理员可查看全校申请。</p>
+    <% } %>
+  </div>
   <div class="tabs">
-    <a class="<%= status === 'PENDING' ? 'active' : '' %>" href="/approvals?status=PENDING">待审批</a>
+    <a class="<%= status === 'ALL' ? 'active' : '' %>" href="/approvals?status=ALL">全部</a>
+    <a class="<%= status === 'DEPT_PENDING' ? 'active' : '' %>" href="/approvals?status=DEPT_PENDING">待部门审批</a>
+    <a class="<%= status === 'SECURITY_PENDING' ? 'active' : '' %>" href="/approvals?status=SECURITY_PENDING">待保卫处审批</a>
     <a class="<%= status === 'APPROVED' ? 'active' : '' %>" href="/approvals?status=APPROVED">已通过</a>
     <a class="<%= status === 'REJECTED' ? 'active' : '' %>" href="/approvals?status=REJECTED">已打回</a>
-    <a class="<%= status === 'ALL' ? 'active' : '' %>" href="/approvals?status=ALL">全部</a>
   </div>
 </div>
 
@@ -18,12 +26,15 @@
         <th>申请人/部门</th>
         <th>入校时间</th>
         <th>状态</th>
+        <th>审批流</th>
         <th>事由</th>
         <th>操作</th>
       </tr>
     </thead>
     <tbody>
       <% applications.forEach(item => { %>
+        <% const canDeptAct = item.status === 'DEPT_PENDING' && (currentUser.role === 'ADMIN' || (currentUser.role === 'DEPARTMENT' && currentUser.canApprove && Number(currentUser.departmentId) === Number(item.department_id))); %>
+        <% const canSecAct = item.status === 'SECURITY_PENDING' && (currentUser.role === 'ADMIN' || (currentUser.role === 'SECURITY' && currentUser.canApprove)); %>
         <tr>
           <td>
             <a href="/applications/<%= item.token %>"><%= item.visitor_name %></a><br>
@@ -31,10 +42,18 @@
           </td>
           <td><%= item.applicant_name %><br><small><%= item.department_name %></small></td>
           <td><%= dayjs(item.visit_start).format('YYYY-MM-DD HH:mm') %><br><small>至 <%= dayjs(item.visit_end).format('YYYY-MM-DD HH:mm') %></small></td>
-          <td><span class="status <%= item.status.toLowerCase() %>"><%= item.status %></span></td>
+          <td><span class="status <%= item.status.toLowerCase().replace('_', '-') %>"><%= statusLabels[item.status] || item.status %></span></td>
+          <td>
+            <% if (item.requires_department_approval) { %>
+              <small>部门：<%= item.department_approver_name || '待审批' %></small><br>
+            <% } else { %>
+              <small>部门：无需审批</small><br>
+            <% } %>
+            <small>保卫处：<%= item.security_approver_name || '待审批' %></small>
+          </td>
           <td class="reason-cell"><%= item.reason %></td>
           <td>
-            <% if (item.status === 'PENDING') { %>
+            <% if (canDeptAct || canSecAct) { %>
               <form class="inline" method="post" action="/approvals/<%= item.id %>/approve">
                 <button type="submit">通过</button>
               </form>
@@ -43,13 +62,13 @@
                 <button class="danger" type="submit">打回</button>
               </form>
             <% } else { %>
-              <small>审批人：<%= item.approver_name || '-' %></small>
+              <small><%= item.approver_name ? `最终审批：${item.approver_name}` : '无可操作项' %></small>
             <% } %>
           </td>
         </tr>
       <% }) %>
       <% if (applications.length === 0) { %>
-        <tr><td colspan="6" class="empty">暂无记录</td></tr>
+        <tr><td colspan="7" class="empty">暂无记录</td></tr>
       <% } %>
     </tbody>
   </table>

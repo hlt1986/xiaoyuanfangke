@@ -13,13 +13,17 @@ async function main() {
   const [[departments]] = await connection.query('SELECT COUNT(*) AS count FROM departments');
   const [[users]] = await connection.query('SELECT COUNT(*) AS count FROM users');
   const [[applications]] = await connection.query('SELECT COUNT(*) AS count FROM visitor_applications');
+  const [userColumns] = await connection.query('SHOW COLUMNS FROM users');
+  const [applicationColumns] = await connection.query('SHOW COLUMNS FROM visitor_applications');
 
   console.log(JSON.stringify({
     ok: true,
     tables: tables.length,
     departments: departments.count,
     users: users.count,
-    applications: applications.count
+    applications: applications.count,
+    userColumns: userColumns.map((item) => item.Field),
+    applicationColumns: applicationColumns.map((item) => item.Field)
   }, null, 2));
 
   await connection.end();

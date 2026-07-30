@@ -1,6 +1,7 @@
 <%- include('partials/header', { title: '账号管理' }) %>
 
-<h1>保卫审批账号管理</h1>
+<h1>账号管理</h1>
+<p class="muted">除系统管理员外，保卫处账号和部门账号都必须绑定具体部门，并可设置是否具有审批权限。</p>
 
 <form class="card form-grid" method="post" action="/admin/users">
   <label>用户名<input name="username" required maxlength="50"></label>
@@ -8,18 +9,41 @@
   <label>密码<input name="password" type="password" required></label>
   <label>
     角色
-    <select name="role">
-      <option value="SECURITY">保卫审批</option>
-      <option value="ADMIN">管理员</option>
+    <select name="role" class="role-select">
+      <option value="DEPARTMENT">部门账号</option>
+      <option value="SECURITY">保卫处账号</option>
+      <option value="ADMIN">系统管理员</option>
     </select>
   </label>
-  <label class="check-row"><input type="checkbox" name="enabled" checked> 启用</label>
+  <label>
+    所属部门
+    <select name="department_id">
+      <option value="">系统管理员可不选</option>
+      <% departments.forEach(dept => { %>
+        <option value="<%= dept.id %>"><%= dept.name %></option>
+      <% }) %>
+    </select>
+  </label>
+  <label class="check-row"><input type="checkbox" name="can_approve" checked> 具有审批权限</label>
+  <label class="check-row"><input type="checkbox" name="enabled" checked> 启用账号</label>
   <div class="actions"><button type="submit">新增账号</button></div>
 </form>
 
 <section class="card">
   <table>
-    <thead><tr><th>ID</th><th>用户名</th><th>姓名</th><th>角色</th><th>启用</th><th>重置密码</th><th>操作</th></tr></thead>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>用户名</th>
+        <th>姓名</th>
+        <th>角色</th>
+        <th>所属部门</th>
+        <th>审批权限</th>
+        <th>启用</th>
+        <th>重置密码</th>
+        <th>操作</th>
+      </tr>
+    </thead>
     <tbody>
       <% users.forEach(user => { %>
         <tr>
@@ -29,10 +53,20 @@
             <td><input name="real_name" value="<%= user.real_name %>" required></td>
             <td>
               <select name="role">
-                <option value="SECURITY" <%= user.role === 'SECURITY' ? 'selected' : '' %>>保卫审批</option>
-                <option value="ADMIN" <%= user.role === 'ADMIN' ? 'selected' : '' %>>管理员</option>
+                <option value="DEPARTMENT" <%= user.role === 'DEPARTMENT' ? 'selected' : '' %>>部门账号</option>
+                <option value="SECURITY" <%= user.role === 'SECURITY' ? 'selected' : '' %>>保卫处账号</option>
+                <option value="ADMIN" <%= user.role === 'ADMIN' ? 'selected' : '' %>>系统管理员</option>
               </select>
             </td>
+            <td>
+              <select name="department_id">
+                <option value="">系统管理员可不选</option>
+                <% departments.forEach(dept => { %>
+                  <option value="<%= dept.id %>" <%= user.department_name === dept.name ? 'selected' : '' %>><%= dept.name %></option>
+                <% }) %>
+              </select>
+            </td>
+            <td><input type="checkbox" name="can_approve" <%= user.can_approve ? 'checked' : '' %>></td>
             <td><input type="checkbox" name="enabled" <%= user.enabled ? 'checked' : '' %>></td>
             <td><input name="password" type="password" placeholder="留空不修改"></td>
             <td>

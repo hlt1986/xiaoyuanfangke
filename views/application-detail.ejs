@@ -6,8 +6,8 @@
     <h1>访客申请详情</h1>
     <p>
       状态：
-      <span class="status <%= application.status.toLowerCase() %>">
-        <%= application.status === 'PENDING' ? '待审批' : application.status === 'APPROVED' ? '已通过' : '已打回' %>
+      <span class="status <%= application.status.toLowerCase().replace('_', '-') %>">
+        <%= statusLabels[application.status] || application.status %>
       </span>
     </p>
     <% if (application.reject_reason) { %>
@@ -23,6 +23,7 @@
 <section class="card">
   <div class="info-grid">
     <p><strong>申请部门：</strong><%= application.department_name %></p>
+    <p><strong>是否需部门审批：</strong><%= application.requires_department_approval ? '需要' : '不需要' %></p>
     <p><strong>申请人：</strong><%= application.applicant_name %></p>
     <p><strong>申请人电话：</strong><%= application.applicant_phone %></p>
     <p><strong>访客：</strong><%= application.visitor_name %>（<%= application.visitor_gender %>）</p>
@@ -31,10 +32,10 @@
     <p><strong>开始时间：</strong><%= dayjs(application.visit_start).format('YYYY-MM-DD HH:mm') %></p>
     <p><strong>结束时间：</strong><%= dayjs(application.visit_end).format('YYYY-MM-DD HH:mm') %></p>
     <p class="span-2"><strong>入校事由：</strong><%= application.reason %></p>
-    <% if (application.approver_name) { %>
-      <p><strong>审批人：</strong><%= application.approver_name %></p>
-      <p><strong>审批时间：</strong><%= dayjs(application.approved_at).format('YYYY-MM-DD HH:mm') %></p>
-    <% } %>
+    <p><strong>部门审批人：</strong><%= application.department_approver_name || (application.requires_department_approval ? '待审批' : '无需审批') %></p>
+    <p><strong>部门审批时间：</strong><%= application.department_approved_at ? dayjs(application.department_approved_at).format('YYYY-MM-DD HH:mm') : '-' %></p>
+    <p><strong>保卫审批人：</strong><%= application.security_approver_name || '待审批' %></p>
+    <p><strong>保卫审批时间：</strong><%= application.security_approved_at ? dayjs(application.security_approved_at).format('YYYY-MM-DD HH:mm') : '-' %></p>
   </div>
 </section>
 

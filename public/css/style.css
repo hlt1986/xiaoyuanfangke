@@ -231,7 +231,9 @@ small {
   font-weight: 900;
 }
 
-.status.pending { background: #fef3c7; color: #92400e; }
+.status.pending,
+.status.dept-pending,
+.status.security-pending { background: #fef3c7; color: #92400e; }
 .status.approved { background: #dcfce7; color: #166534; }
 .status.rejected { background: #fee2e2; color: #991b1b; }
 
@@ -344,6 +346,10 @@ td input[type="checkbox"] {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 18px;
+}
+
+.screen-tabs {
+  margin-bottom: 20px;
 }
 
 .visitor-card {

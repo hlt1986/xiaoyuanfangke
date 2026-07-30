@@ -3,7 +3,8 @@
 <h1>工作台</h1>
 <section class="stats">
   <div class="stat"><strong><%= stats.total || 0 %></strong><span>总申请</span></div>
-  <div class="stat"><strong><%= stats.pending || 0 %></strong><span>待审批</span></div>
+  <div class="stat"><strong><%= stats.dept_pending || 0 %></strong><span>待部门审批</span></div>
+  <div class="stat"><strong><%= stats.security_pending || 0 %></strong><span>待保卫处审批</span></div>
   <div class="stat"><strong><%= stats.approved || 0 %></strong><span>已通过</span></div>
   <div class="stat"><strong><%= stats.rejected || 0 %></strong><span>已打回</span></div>
 </section>
@@ -11,7 +12,7 @@
 <section class="card">
   <div class="section-title">
     <h2>最近申请</h2>
-    <a class="button ghost" href="/approvals">进入审批</a>
+    <a class="button ghost" href="/approvals">进入审批查看</a>
   </div>
   <table>
     <thead><tr><th>访客</th><th>部门</th><th>时间</th><th>状态</th></tr></thead>
@@ -21,9 +22,12 @@
           <td><a href="/applications/<%= item.token %>"><%= item.visitor_name %></a></td>
           <td><%= item.department_name %></td>
           <td><%= dayjs(item.visit_start).format('MM-DD HH:mm') %> 至 <%= dayjs(item.visit_end).format('MM-DD HH:mm') %></td>
-          <td><span class="status <%= item.status.toLowerCase() %>"><%= item.status %></span></td>
+          <td><span class="status <%= item.status.toLowerCase().replace('_', '-') %>"><%= statusLabels[item.status] || item.status %></span></td>
         </tr>
       <% }) %>
+      <% if (recent.length === 0) { %>
+        <tr><td colspan="4" class="empty">暂无记录</td></tr>
+      <% } %>
     </tbody>
   </table>
 </section>

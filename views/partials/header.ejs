@@ -14,17 +14,19 @@
       <a href="/screen">大屏展示</a>
       <% if (currentUser) { %>
         <a href="/dashboard">工作台</a>
-        <a href="/approvals">审批</a>
+        <% if (['ADMIN', 'SECURITY', 'DEPARTMENT'].includes(currentUser.role)) { %>
+          <a href="/approvals">审批查看</a>
+        <% } %>
         <% if (currentUser.role === 'ADMIN') { %>
-          <a href="/admin/departments">部门</a>
-          <a href="/admin/users">账号</a>
+          <a href="/admin/departments">部门管理</a>
+          <a href="/admin/users">账号管理</a>
           <a href="/admin/applications">申请管理</a>
         <% } %>
         <form class="inline" method="post" action="/logout">
           <button class="link-button" type="submit">退出（<%= currentUser.realName %>）</button>
         </form>
       <% } else { %>
-        <a href="/login">登录</a>
+        <a href="/login">后台登录</a>
       <% } %>
     </nav>
   </header>

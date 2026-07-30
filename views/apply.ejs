@@ -4,7 +4,7 @@
   <div>
     <p class="eyebrow">免登录申请入口</p>
     <h1>提交校园访客申请</h1>
-    <p>填写申请人、访客和入校时间信息。提交后系统会生成专属二维码，可用于查看审批状态和门卫核验。</p>
+    <p>填写申请人、访客和入校时间。提交后系统生成专属二维码，可用于查看审批进度和门卫核验。</p>
   </div>
 </section>
 
@@ -16,6 +16,13 @@
       <% departments.forEach(dept => { %>
         <option value="<%= dept.id %>"><%= dept.name %></option>
       <% }) %>
+    </select>
+  </label>
+  <label>
+    是否需要部门负责人审批
+    <select name="requires_department_approval" required>
+      <option value="0">不需要，直接提交保卫处审批</option>
+      <option value="1">需要，先提交部门负责人审批</option>
     </select>
   </label>
   <label>
