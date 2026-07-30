@@ -56,9 +56,24 @@ app.use((req, res, next) => {
   res.locals.currentUser = req.session.user || null;
   res.locals.flash = req.session.flash || null;
   res.locals.dayjs = dayjs;
-  res.locals.statusLabels = STATUS_LABELS;
-  res.locals.roleLabels = ROLE_LABELS;
-  res.locals.screenFilterLabels = SCREEN_FILTER_LABELS;
+  res.locals.statusLabels = {
+    DEPT_PENDING: '待部门负责人审批',
+    SECURITY_PENDING: '待保卫处审批',
+    APPROVED: '已通过',
+    REJECTED: '已打回'
+  };
+  res.locals.roleLabels = {
+    ADMIN: '系统管理员',
+    SECURITY: '保卫处账号',
+    DEPARTMENT: '部门账号'
+  };
+  res.locals.screenFilterLabels = {
+    effective: '当前有效',
+    upcoming: '即将到访',
+    expired: '已失效',
+    all: '全部已通过'
+  };
+  res.locals.hideNav = false;
   delete req.session.flash;
   next();
 });
@@ -403,6 +418,37 @@ app.post('/login', asyncHandler(async (req, res) => {
 app.post('/logout', (req, res) => {
   req.session.destroy(() => res.redirect('/login'));
 });
+
+app.get('/change-password', requireLogin, (req, res) => {
+  res.render('change-password');
+});
+
+app.post('/change-password', requireLogin, asyncHandler(async (req, res) => {
+  const { old_password, new_password, confirm_password } = req.body;
+  if (!requiredText(old_password) || !requiredText(new_password) || !requiredText(confirm_password)) {
+    flash(req, 'error', '请完整填写原密码和新密码');
+    return res.redirect('/change-password');
+  }
+  if (new_password.length < 6) {
+    flash(req, 'error', '新密码长度不能少于 6 位');
+    return res.redirect('/change-password');
+  }
+  if (new_password !== confirm_password) {
+    flash(req, 'error', '两次输入的新密码不一致');
+    return res.redirect('/change-password');
+  }
+
+  const [[user]] = await pool.query('SELECT password_hash FROM users WHERE id = ?', [req.session.user.id]);
+  if (!user || !(await bcrypt.compare(old_password, user.password_hash))) {
+    flash(req, 'error', '原密码不正确');
+    return res.redirect('/change-password');
+  }
+
+  const passwordHash = await bcrypt.hash(new_password, 10);
+  await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, req.session.user.id]);
+  flash(req, 'success', '密码修改成功，请使用新密码重新登录');
+  req.session.destroy(() => res.redirect('/login'));
+}));
 
 app.get('/dashboard', requireLogin, asyncHandler(async (req, res) => {
   const scope = approvalScopeWhere(req.session.user);

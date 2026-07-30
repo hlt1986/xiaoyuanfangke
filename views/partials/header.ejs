@@ -6,31 +6,44 @@
   <title><%= title || '校园访客审批平台' %></title>
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
-  <header class="topbar">
-    <a class="brand" href="/">校园访客审批平台</a>
-    <nav>
-      <a href="/">访客申请</a>
-      <a href="/screen">大屏展示</a>
-      <% if (currentUser) { %>
-        <a href="/dashboard">工作台</a>
-        <% if (['ADMIN', 'SECURITY', 'DEPARTMENT'].includes(currentUser.role)) { %>
-          <a href="/approvals">审批查看</a>
-        <% } %>
-        <% if (currentUser.role === 'ADMIN') { %>
+<body class="<%= hideNav ? 'screen-only' : '' %>">
+  <header class="topbar <%= hideNav ? 'topbar-screen' : '' %>">
+    <a class="brand" href="<%= currentUser && currentUser.role === 'ADMIN' ? '/admin/departments' : '/' %>">
+      <img src="/images/school-logo.jpg" alt="学校校徽" class="brand-logo">
+      <span>
+        <strong>校园访客审批平台</strong>
+        <small>河北科技工程职业技术大学</small>
+      </span>
+    </a>
+    <% if (!hideNav) { %>
+      <nav>
+        <% if (currentUser && currentUser.role === 'ADMIN') { %>
           <a href="/admin/departments">部门管理</a>
           <a href="/admin/users">账号管理</a>
           <a href="/admin/applications">申请管理</a>
+          <a href="/approvals">审批查看</a>
+        <% } else { %>
+          <a href="/">访客申请</a>
+          <a href="/screen">大屏展示</a>
+          <% if (currentUser) { %>
+            <a href="/dashboard">工作台</a>
+            <% if (['SECURITY', 'DEPARTMENT'].includes(currentUser.role)) { %>
+              <a href="/approvals">审批查看</a>
+            <% } %>
+          <% } %>
         <% } %>
-        <form class="inline" method="post" action="/logout">
-          <button class="link-button" type="submit">退出（<%= currentUser.realName %>）</button>
-        </form>
-      <% } else { %>
-        <a href="/login">后台登录</a>
-      <% } %>
-    </nav>
+        <% if (currentUser) { %>
+          <a href="/change-password">修改密码</a>
+          <form class="inline" method="post" action="/logout">
+            <button class="link-button" type="submit">退出（<%= currentUser.realName %>）</button>
+          </form>
+        <% } else { %>
+          <a href="/login">后台登录</a>
+        <% } %>
+      </nav>
+    <% } %>
   </header>
-  <main class="container">
+  <main class="container <%= hideNav ? 'screen-container' : '' %>">
     <% if (flash) { %>
       <div class="alert <%= flash.type %>"><%= flash.message %></div>
     <% } %>

@@ -39,9 +39,37 @@ a:hover { text-decoration: underline; }
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
   color: var(--text);
   font-weight: 800;
   font-size: 18px;
+}
+
+.brand:hover { text-decoration: none; }
+
+.brand-logo {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(29, 99, 237, 0.16);
+  box-shadow: 0 8px 20px rgba(29, 99, 237, 0.16);
+  background: white;
+}
+
+.brand span {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.brand small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .topbar nav {
@@ -49,6 +77,11 @@ a:hover { text-decoration: underline; }
   align-items: center;
   flex-wrap: wrap;
   gap: 16px;
+}
+
+.topbar-screen {
+  justify-content: center;
+  position: static;
 }
 
 .container {
@@ -60,6 +93,7 @@ a:hover { text-decoration: underline; }
   min-height: 210px;
   display: flex;
   align-items: center;
+  gap: 28px;
   padding: 36px;
   margin-bottom: 22px;
   border-radius: 26px;
@@ -68,6 +102,17 @@ a:hover { text-decoration: underline; }
     radial-gradient(circle at 85% 25%, rgba(255,255,255,0.32), transparent 28%),
     linear-gradient(135deg, #1d63ed, #0d9488);
   box-shadow: var(--shadow);
+}
+
+.hero-logo {
+  width: 118px;
+  height: 118px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  object-fit: cover;
+  background: white;
+  padding: 6px;
+  box-shadow: 0 18px 38px rgba(8, 18, 38, 0.2);
 }
 
 .hero h1,
@@ -192,6 +237,24 @@ small {
 .login-card {
   max-width: 430px;
   margin: 60px auto;
+}
+
+.login-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: -6px;
+  margin-bottom: 12px;
+}
+
+.login-logo {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  object-fit: cover;
+  padding: 5px;
+  background: white;
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 24px rgba(27, 46, 83, 0.14);
 }
 
 .login-card label { margin: 16px 0; }
@@ -342,6 +405,10 @@ td input[type="checkbox"] {
   margin-bottom: 22px;
 }
 
+.screen-container {
+  width: min(1380px, calc(100% - 32px));
+}
+
 .screen-head .eyebrow { color: var(--primary); }
 
 .clock {
@@ -413,4 +480,5 @@ td input[type="checkbox"] {
 
   .span-2 { grid-column: span 1; }
   table { display: block; overflow-x: auto; white-space: nowrap; }
+  .hero-logo { width: 86px; height: 86px; }
 }
