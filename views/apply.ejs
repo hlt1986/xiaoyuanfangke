@@ -9,10 +9,10 @@
   </div>
 </section>
 
-<form class="card form-grid" method="post" action="/applications">
+<form class="card form-grid" method="post" action="/applications" id="application-form">
   <label>
     申请人所在部门
-    <select name="department_id" required>
+    <select name="department_id" id="department-select" required>
       <option value="">请选择部门</option>
       <% departments.forEach(dept => { %>
         <option value="<%= dept.id %>"><%= dept.name %></option>
@@ -21,10 +21,17 @@
   </label>
   <label>
     是否需要部门负责人审批
-    <select name="requires_department_approval" required>
+    <select name="requires_department_approval" id="approval-required-select" required>
       <option value="0">不需要，直接提交保卫处审批</option>
       <option value="1">需要，先提交部门负责人审批</option>
     </select>
+  </label>
+  <label class="span-2 hidden" id="department-approver-field">
+    部门负责人审批人
+    <select name="department_approver_id" id="department-approver-select">
+      <option value="">请先选择申请人所在部门</option>
+    </select>
+    <small class="hint" id="department-approver-hint">仅显示该部门已启用且具有审批权限的部门账号姓名。</small>
   </label>
   <label>
     申请人姓名
@@ -70,5 +77,57 @@
     <button type="submit">提交申请并生成二维码</button>
   </div>
 </form>
+
+<script>
+  const departmentApprovers = <%- JSON.stringify(departmentApprovers || []) %>;
+  const departmentSelect = document.getElementById('department-select');
+  const approvalRequiredSelect = document.getElementById('approval-required-select');
+  const approverField = document.getElementById('department-approver-field');
+  const approverSelect = document.getElementById('department-approver-select');
+  const approverHint = document.getElementById('department-approver-hint');
+  const form = document.getElementById('application-form');
+
+  function renderApproverOptions() {
+    const needsApproval = approvalRequiredSelect.value === '1';
+    const departmentId = departmentSelect.value;
+    approverField.classList.toggle('hidden', !needsApproval);
+    approverSelect.required = needsApproval;
+
+    if (!needsApproval) {
+      approverSelect.innerHTML = '<option value="">无需选择部门负责人</option>';
+      approverSelect.value = '';
+      return;
+    }
+
+    if (!departmentId) {
+      approverSelect.innerHTML = '<option value="">请先选择申请人所在部门</option>';
+      approverHint.textContent = '选择部门后，系统会显示该部门具有审批权限的负责人。';
+      return;
+    }
+
+    const options = departmentApprovers.filter((user) => String(user.department_id) === String(departmentId));
+    if (options.length === 0) {
+      approverSelect.innerHTML = '<option value="">该部门暂无可选审批负责人</option>';
+      approverHint.textContent = '请联系管理员为该部门账号设置审批权限，或改选“不需要”后由保卫处指定。';
+      return;
+    }
+
+    approverSelect.innerHTML = '<option value="">请选择部门负责人审批人</option>' + options.map((user) => (
+      `<option value="${user.id}">${user.real_name}</option>`
+    )).join('');
+    approverHint.textContent = '仅显示该部门已启用且具有审批权限的部门账号姓名。';
+  }
+
+  departmentSelect.addEventListener('change', renderApproverOptions);
+  approvalRequiredSelect.addEventListener('change', renderApproverOptions);
+  form.addEventListener('submit', (event) => {
+    if (approvalRequiredSelect.value === '1' && !approverSelect.value) {
+      event.preventDefault();
+      alert('请选择部门负责人审批人');
+    }
+  });
+
+  renderApproverOptions();
+</script>
 
 <%- include('partials/footer') %>

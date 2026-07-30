@@ -233,6 +233,7 @@ small {
 }
 
 .hint { font-size: 13px; }
+.hidden { display: none !important; }
 
 .login-card {
   max-width: 430px;

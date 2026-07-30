@@ -316,12 +316,19 @@ function nextStatus(requiresDepartmentApproval) {
 
 app.get('/', asyncHandler(async (req, res) => {
   const [departments] = await pool.query('SELECT * FROM departments WHERE enabled = 1 ORDER BY id ASC');
-  res.render('apply', { departments });
+  const [departmentApprovers] = await pool.query(`
+    SELECT id, real_name, department_id, department_name
+    FROM users
+    WHERE enabled = 1 AND role = 'DEPARTMENT' AND can_approve = 1
+    ORDER BY department_name ASC, real_name ASC
+  `);
+  res.render('apply', { departments, departmentApprovers });
 }));
 
 app.post('/applications', asyncHandler(async (req, res) => {
   const {
     department_id,
+    department_approver_id,
     applicant_name,
     applicant_phone,
     visitor_name,
@@ -346,6 +353,25 @@ app.post('/applications', asyncHandler(async (req, res) => {
     return res.redirect('/');
   }
 
+  let assignedApprover = null;
+  if (requiresDepartmentApproval) {
+    if (!department_approver_id) {
+      flash(req, 'error', '请选择部门负责人审批人');
+      return res.redirect('/');
+    }
+    const [[approver]] = await pool.query(
+      `SELECT id, real_name, department_id, department_name
+       FROM users
+       WHERE id = ? AND enabled = 1 AND role = 'DEPARTMENT' AND can_approve = 1`,
+      [department_approver_id]
+    );
+    if (!approver || Number(approver.department_id) !== Number(department.id)) {
+      flash(req, 'error', '请选择该部门具有审批权限的负责人');
+      return res.redirect('/');
+    }
+    assignedApprover = approver;
+  }
+
   const startTime = dayjs(visit_start);
   const endTime = dayjs(visit_end);
   if (!startTime.isValid() || !endTime.isValid()) {
@@ -361,8 +387,9 @@ app.post('/applications', asyncHandler(async (req, res) => {
   await pool.query(
     `INSERT INTO visitor_applications
      (token, department_id, department_name, applicant_name, applicant_phone, visitor_name, visitor_gender, visitor_phone,
-      license_plate, reason, visit_start, visit_end, requires_department_approval, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      license_plate, reason, visit_start, visit_end, requires_department_approval, status,
+      assigned_department_approver_id, assigned_department_approver_name)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       token,
       department.id,
@@ -377,7 +404,9 @@ app.post('/applications', asyncHandler(async (req, res) => {
       normalizeDateTime(startTime),
       normalizeDateTime(endTime),
       requiresDepartmentApproval ? 1 : 0,
-      nextStatus(requiresDepartmentApproval)
+      nextStatus(requiresDepartmentApproval),
+      assignedApprover?.id || null,
+      assignedApprover?.real_name || null
     ]
   );
 
