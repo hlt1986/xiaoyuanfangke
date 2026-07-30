@@ -4,9 +4,9 @@
   <div>
     <p class="eyebrow">门卫核验大屏</p>
     <h1>已通过访客</h1>
-    <p class="muted">本页面仅展示最终审批通过的访客，可切换当前有效、即将到访、已失效等状态，并每 30 秒自动刷新。</p>
+    <p class="muted">本页面仅展示最终审批通过的访客，可切换当前有效、即将到访、已失效等状态；数据每 5 秒自动更新，右侧时间每秒更新。</p>
   </div>
-  <div class="clock"><%= dayjs().format('YYYY-MM-DD HH:mm') %></div>
+  <div class="clock" id="screen-clock"><%= dayjs().format('YYYY-MM-DD HH:mm:ss') %></div>
 </section>
 
 <div class="tabs screen-tabs">
@@ -15,7 +15,7 @@
   <% }) %>
 </div>
 
-<section class="screen-grid">
+<section class="screen-grid" id="screen-grid">
   <% applications.forEach(item => { %>
     <article class="visitor-card">
       <div class="visitor-card-top">
@@ -38,9 +38,78 @@
 
 <script>
   const currentFilter = new URLSearchParams(location.search).get('filter') || 'effective';
-  setTimeout(() => {
-    location.href = `/screen?filter=${encodeURIComponent(currentFilter)}`;
-  }, 30000);
+  const filterLabels = <%- JSON.stringify(screenFilterLabels) %>;
+  const grid = document.getElementById('screen-grid');
+  const clock = document.getElementById('screen-clock');
+
+  function pad(value) {
+    return String(value).padStart(2, '0');
+  }
+
+  function formatDateTime(value, withSeconds = false) {
+    if (!value) return '-';
+    const date = new Date(value);
+    const base = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    return withSeconds ? `${base}:${pad(date.getSeconds())}` : base;
+  }
+
+  function formatShort(value) {
+    if (!value) return '-';
+    const date = new Date(value);
+    return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  function updateClock() {
+    clock.textContent = formatDateTime(new Date(), true);
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[char]));
+  }
+
+  function renderCards(applications) {
+    if (!applications.length) {
+      grid.innerHTML = '<div class="card empty">当前筛选条件下暂无已通过访客</div>';
+      return;
+    }
+
+    grid.innerHTML = applications.map((item) => `
+      <article class="visitor-card">
+        <div class="visitor-card-top">
+          <h2>${escapeHtml(item.visitorName)}</h2>
+          <span>${escapeHtml(item.departmentName)}</span>
+        </div>
+        <p><strong>当前分类：</strong>${escapeHtml(filterLabels[currentFilter] || '当前有效')}</p>
+        <p><strong>访客电话：</strong>${escapeHtml(item.visitorPhone)}</p>
+        <p><strong>车牌号：</strong>${escapeHtml(item.licensePlate)}</p>
+        <p><strong>申请人：</strong>${escapeHtml(item.applicantName)} / ${escapeHtml(item.applicantPhone)}</p>
+        <p><strong>有效时间：</strong>${formatShort(item.visitStart)} 至 ${formatShort(item.visitEnd)}</p>
+        <p><strong>事由：</strong>${escapeHtml(item.reason)}</p>
+        <p class="approved">已通过：${escapeHtml(item.securityApproverName)}，${formatShort(item.approvedAt)}</p>
+      </article>
+    `).join('');
+  }
+
+  async function refreshData() {
+    try {
+      const response = await fetch(`/api/screen?filter=${encodeURIComponent(currentFilter)}`, { cache: 'no-store' });
+      const data = await response.json();
+      if (data.ok) renderCards(data.applications);
+    } catch (error) {
+      console.error('大屏刷新失败', error);
+    }
+  }
+
+  updateClock();
+  setInterval(updateClock, 1000);
+  refreshData();
+  setInterval(refreshData, 5000);
 </script>
 
 <%- include('partials/footer') %>

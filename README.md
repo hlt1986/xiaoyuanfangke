@@ -70,6 +70,21 @@ logs/app.out.log
 logs/app.err.log
 ```
 
+## 一键部署
+
+Windows 服务器：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\deploy-windows.ps1 -SiteUrl "http://服务器IP:3000"
+```
+
+Linux 服务器：
+
+```bash
+chmod +x deploy-linux.sh
+SITE_URL="http://服务器IP:3000" ./deploy-linux.sh
+```
+
 ## 默认账号
 
 | 角色 | 用户名 | 密码 |

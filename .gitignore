@@ -21,6 +21,7 @@ Desktop.ini
 # Logs
 *.log
 logs/
+docs/render-*/
 
 # Runtime process files
 .xiaoyuanfangke.pid

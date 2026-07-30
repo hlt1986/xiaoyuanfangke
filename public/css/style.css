@@ -155,6 +155,8 @@ button:hover,
 
 .danger { background: var(--danger); }
 .danger:hover { background: #b91c1c; }
+.warning { background: var(--warn); }
+.warning:hover { background: #b45309; }
 
 .link-button {
   padding: 0;
@@ -283,6 +285,12 @@ th {
 }
 
 .reject-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.assign-form {
   display: flex;
   gap: 8px;
   margin-top: 8px;

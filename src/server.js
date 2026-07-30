@@ -179,6 +179,11 @@ async function initDatabase() {
       reject_reason VARCHAR(500),
       department_approver_id BIGINT,
       department_approver_name VARCHAR(50),
+      assigned_department_approver_id BIGINT,
+      assigned_department_approver_name VARCHAR(50),
+      assigned_by_security_id BIGINT,
+      assigned_by_security_name VARCHAR(50),
+      assigned_at DATETIME,
       department_approved_at DATETIME,
       security_approver_id BIGINT,
       security_approver_name VARCHAR(50),
@@ -222,6 +227,11 @@ async function migrateSchema() {
   await ensureColumn('visitor_applications', 'requires_department_approval TINYINT(1) NOT NULL DEFAULT 0');
   await ensureColumn('visitor_applications', 'department_approver_id BIGINT NULL');
   await ensureColumn('visitor_applications', 'department_approver_name VARCHAR(50) NULL');
+  await ensureColumn('visitor_applications', 'assigned_department_approver_id BIGINT NULL');
+  await ensureColumn('visitor_applications', 'assigned_department_approver_name VARCHAR(50) NULL');
+  await ensureColumn('visitor_applications', 'assigned_by_security_id BIGINT NULL');
+  await ensureColumn('visitor_applications', 'assigned_by_security_name VARCHAR(50) NULL');
+  await ensureColumn('visitor_applications', 'assigned_at DATETIME NULL');
   await ensureColumn('visitor_applications', 'department_approved_at DATETIME NULL');
   await ensureColumn('visitor_applications', 'security_approver_id BIGINT NULL');
   await ensureColumn('visitor_applications', 'security_approver_name VARCHAR(50) NULL');
@@ -433,7 +443,60 @@ app.get('/approvals', requireApprovalAccess, asyncHandler(async (req, res) => {
 
   const where = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : '';
   const [applications] = await pool.query(`SELECT * FROM visitor_applications ${where} ORDER BY created_at DESC`, params);
-  res.render('approvals', { applications, status });
+  const [departmentApprovers] = await pool.query(`
+    SELECT id, real_name, department_id, department_name
+    FROM users
+    WHERE enabled = 1 AND role = 'DEPARTMENT' AND can_approve = 1
+    ORDER BY department_name ASC, real_name ASC
+  `);
+  res.render('approvals', { applications, status, departmentApprovers });
+}));
+
+app.post('/approvals/:id/assign-department', requireApprovalAccess, asyncHandler(async (req, res) => {
+  if (!canSecurityApprove(req.session.user)) {
+    flash(req, 'error', '只有具有审批权限的保卫处账号或管理员可以指定部门审批人');
+    return res.redirect('/approvals');
+  }
+
+  const application = await applicationById(req.params.id);
+  if (!application) {
+    flash(req, 'error', '申请不存在');
+    return res.redirect('/approvals');
+  }
+  if (application.status !== 'SECURITY_PENDING') {
+    flash(req, 'error', '只有待保卫处审批的申请可以指定部门审批人');
+    return res.redirect('/approvals');
+  }
+
+  const [[approver]] = await pool.query(
+    `SELECT id, real_name, department_id, department_name
+     FROM users
+     WHERE id = ? AND enabled = 1 AND role = 'DEPARTMENT' AND can_approve = 1`,
+    [req.body.department_approver_id]
+  );
+  if (!approver) {
+    flash(req, 'error', '请选择有效的部门审批人');
+    return res.redirect('/approvals');
+  }
+  if (Number(approver.department_id) !== Number(application.department_id)) {
+    flash(req, 'error', '指定审批人必须属于该申请所在部门');
+    return res.redirect('/approvals');
+  }
+
+  await pool.query(
+    `UPDATE visitor_applications
+     SET status = 'DEPT_PENDING',
+         requires_department_approval = 1,
+         assigned_department_approver_id = ?,
+         assigned_department_approver_name = ?,
+         assigned_by_security_id = ?,
+         assigned_by_security_name = ?,
+         assigned_at = NOW()
+     WHERE id = ?`,
+    [approver.id, approver.real_name, req.session.user.id, req.session.user.realName, application.id]
+  );
+  flash(req, 'success', `已指定 ${approver.real_name} 进行部门负责人审批`);
+  res.redirect('/approvals?status=DEPT_PENDING');
 }));
 
 app.post('/approvals/:id/approve', requireApprovalAccess, asyncHandler(async (req, res) => {
@@ -664,6 +727,42 @@ app.get('/screen', asyncHandler(async (req, res) => {
     params
   );
   res.render('screen', { applications, filter });
+}));
+
+app.get('/api/screen', asyncHandler(async (req, res) => {
+  const filter = req.query.filter || 'effective';
+  let timeWhere = '';
+  if (filter === 'effective') {
+    timeWhere = 'AND visit_start <= NOW() AND visit_end >= NOW()';
+  } else if (filter === 'upcoming') {
+    timeWhere = 'AND visit_start > NOW()';
+  } else if (filter === 'expired') {
+    timeWhere = 'AND visit_end < NOW()';
+  }
+  const [applications] = await pool.query(
+    `SELECT * FROM visitor_applications
+     WHERE status = 'APPROVED' ${timeWhere}
+     ORDER BY visit_start ASC`
+  );
+  res.json({
+    ok: true,
+    serverTime: new Date().toISOString(),
+    filter,
+    applications: applications.map((item) => ({
+      id: item.id,
+      visitorName: item.visitor_name,
+      visitorPhone: item.visitor_phone,
+      licensePlate: item.license_plate || '无',
+      departmentName: item.department_name,
+      applicantName: item.applicant_name,
+      applicantPhone: item.applicant_phone,
+      reason: item.reason,
+      visitStart: item.visit_start,
+      visitEnd: item.visit_end,
+      securityApproverName: item.security_approver_name || item.approver_name || '-',
+      approvedAt: item.security_approved_at || item.approved_at
+    }))
+  });
 }));
 
 app.get('/health', asyncHandler(async (req, res) => {
