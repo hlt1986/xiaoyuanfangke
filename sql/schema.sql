@@ -1,0 +1,48 @@
+CREATE DATABASE IF NOT EXISTS xiaoyuanfangke
+  DEFAULT CHARACTER SET utf8mb4
+  DEFAULT COLLATE utf8mb4_unicode_ci;
+
+USE xiaoyuanfangke;
+
+CREATE TABLE IF NOT EXISTS departments (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL UNIQUE,
+  enabled TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS users (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  real_name VARCHAR(50) NOT NULL,
+  role ENUM('ADMIN', 'SECURITY') NOT NULL,
+  enabled TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS visitor_applications (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  token VARCHAR(64) NOT NULL UNIQUE,
+  department_id BIGINT NOT NULL,
+  department_name VARCHAR(100) NOT NULL,
+  applicant_name VARCHAR(50) NOT NULL,
+  applicant_phone VARCHAR(30) NOT NULL,
+  visitor_name VARCHAR(50) NOT NULL,
+  visitor_gender VARCHAR(10) NOT NULL,
+  visitor_phone VARCHAR(30) NOT NULL,
+  license_plate VARCHAR(30),
+  reason VARCHAR(500) NOT NULL,
+  visit_start DATETIME NOT NULL,
+  visit_end DATETIME NOT NULL,
+  status ENUM('PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING',
+  reject_reason VARCHAR(500),
+  approver_id BIGINT,
+  approver_name VARCHAR(50),
+  approved_at DATETIME,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_status_time (status, visit_end),
+  INDEX idx_token (token),
+  CONSTRAINT fk_application_department FOREIGN KEY (department_id) REFERENCES departments(id)
+);

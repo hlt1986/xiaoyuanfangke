@@ -1,0 +1,18 @@
+<%- include('partials/header', { title: '登录' }) %>
+
+<form class="card login-card" method="post" action="/login">
+  <h1>后台登录</h1>
+  <p class="muted">保卫负责人和管理员账号登录后可审批或维护系统信息。</p>
+  <label>
+    用户名
+    <input name="username" required autofocus>
+  </label>
+  <label>
+    密码
+    <input name="password" type="password" required>
+  </label>
+  <button type="submit">登录</button>
+  <p class="hint">默认管理员：admin / admin123；保卫审批：security / security123</p>
+</form>
+
+<%- include('partials/footer') %>

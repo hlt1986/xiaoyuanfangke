@@ -1,0 +1,66 @@
+<%- include('partials/header', { title: '访客申请' }) %>
+
+<section class="hero">
+  <div>
+    <p class="eyebrow">免登录申请入口</p>
+    <h1>提交校园访客申请</h1>
+    <p>填写申请人、访客和入校时间信息。提交后系统会生成专属二维码，可用于查看审批状态和门卫核验。</p>
+  </div>
+</section>
+
+<form class="card form-grid" method="post" action="/applications">
+  <label>
+    申请人所在部门
+    <select name="department_id" required>
+      <option value="">请选择部门</option>
+      <% departments.forEach(dept => { %>
+        <option value="<%= dept.id %>"><%= dept.name %></option>
+      <% }) %>
+    </select>
+  </label>
+  <label>
+    申请人姓名
+    <input name="applicant_name" required maxlength="50">
+  </label>
+  <label>
+    申请人联系电话
+    <input name="applicant_phone" required maxlength="30">
+  </label>
+  <label>
+    访客姓名
+    <input name="visitor_name" required maxlength="50">
+  </label>
+  <label>
+    访客性别
+    <select name="visitor_gender" required>
+      <option value="男">男</option>
+      <option value="女">女</option>
+      <option value="其他">其他</option>
+    </select>
+  </label>
+  <label>
+    访客联系电话
+    <input name="visitor_phone" required maxlength="30">
+  </label>
+  <label>
+    车牌号（可选）
+    <input name="license_plate" maxlength="30" placeholder="无车辆可不填">
+  </label>
+  <label>
+    开始时间
+    <input type="datetime-local" name="visit_start" required>
+  </label>
+  <label>
+    结束时间
+    <input type="datetime-local" name="visit_end" required>
+  </label>
+  <label class="span-2">
+    入校事由
+    <textarea name="reason" required maxlength="500" rows="4"></textarea>
+  </label>
+  <div class="span-2 actions">
+    <button type="submit">提交申请并生成二维码</button>
+  </div>
+</form>
+
+<%- include('partials/footer') %>

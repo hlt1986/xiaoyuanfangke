@@ -1,0 +1,41 @@
+<%- include('partials/header', { title: '申请详情' }) %>
+
+<section class="card detail-layout">
+  <div>
+    <p class="eyebrow">申请编号 #<%= application.id %></p>
+    <h1>访客申请详情</h1>
+    <p>
+      状态：
+      <span class="status <%= application.status.toLowerCase() %>">
+        <%= application.status === 'PENDING' ? '待审批' : application.status === 'APPROVED' ? '已通过' : '已打回' %>
+      </span>
+    </p>
+    <% if (application.reject_reason) { %>
+      <p class="muted">打回原因：<%= application.reject_reason %></p>
+    <% } %>
+  </div>
+  <div class="qr-box">
+    <img src="<%= qrDataUrl %>" alt="申请二维码">
+    <p>扫码查看本申请</p>
+  </div>
+</section>
+
+<section class="card">
+  <div class="info-grid">
+    <p><strong>申请部门：</strong><%= application.department_name %></p>
+    <p><strong>申请人：</strong><%= application.applicant_name %></p>
+    <p><strong>申请人电话：</strong><%= application.applicant_phone %></p>
+    <p><strong>访客：</strong><%= application.visitor_name %>（<%= application.visitor_gender %>）</p>
+    <p><strong>访客电话：</strong><%= application.visitor_phone %></p>
+    <p><strong>车牌号：</strong><%= application.license_plate || '无' %></p>
+    <p><strong>开始时间：</strong><%= dayjs(application.visit_start).format('YYYY-MM-DD HH:mm') %></p>
+    <p><strong>结束时间：</strong><%= dayjs(application.visit_end).format('YYYY-MM-DD HH:mm') %></p>
+    <p class="span-2"><strong>入校事由：</strong><%= application.reason %></p>
+    <% if (application.approver_name) { %>
+      <p><strong>审批人：</strong><%= application.approver_name %></p>
+      <p><strong>审批时间：</strong><%= dayjs(application.approved_at).format('YYYY-MM-DD HH:mm') %></p>
+    <% } %>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

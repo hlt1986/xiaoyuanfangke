@@ -1,0 +1,36 @@
+<%- include('partials/header', { title: '部门管理' }) %>
+
+<h1>部门管理</h1>
+
+<form class="card compact-form" method="post" action="/admin/departments">
+  <label>
+    新增部门
+    <input name="name" required maxlength="100" placeholder="请输入部门名称">
+  </label>
+  <button type="submit">新增</button>
+</form>
+
+<section class="card">
+  <table>
+    <thead><tr><th>ID</th><th>部门名称</th><th>启用</th><th>操作</th></tr></thead>
+    <tbody>
+      <% departments.forEach(dept => { %>
+        <tr>
+          <form method="post" action="/admin/departments/<%= dept.id %>">
+            <td><%= dept.id %></td>
+            <td><input name="name" value="<%= dept.name %>" required></td>
+            <td><input type="checkbox" name="enabled" <%= dept.enabled ? 'checked' : '' %>></td>
+            <td>
+              <button type="submit">保存</button>
+          </form>
+              <form class="inline" method="post" action="/admin/departments/<%= dept.id %>/delete" onsubmit="return confirm('确认删除该部门？')">
+                <button class="danger" type="submit">删除</button>
+              </form>
+            </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</section>
+
+<%- include('partials/footer') %>

@@ -22,6 +22,9 @@ Desktop.ini
 *.log
 logs/
 
+# Local environment secrets
+.env
+
 # Editor / IDE local settings
 .vscode/
 .idea/

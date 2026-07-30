@@ -1,0 +1,26 @@
+{
+  "name": "xiaoyuanfangke",
+  "version": "1.0.0",
+  "description": "校园访客审批平台",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "check:db": "node scripts/check-db.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dayjs": "^1.11.13",
+    "dotenv": "^16.4.5",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "method-override": "^3.0.0",
+    "mysql2": "^3.11.0",
+    "qrcode": "^1.5.4",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

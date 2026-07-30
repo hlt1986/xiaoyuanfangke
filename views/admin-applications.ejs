@@ -1,0 +1,28 @@
+<%- include('partials/header', { title: '申请管理' }) %>
+
+<h1>申请信息管理</h1>
+
+<section class="card">
+  <table>
+    <thead><tr><th>ID</th><th>访客</th><th>申请人/部门</th><th>入校时间</th><th>状态</th><th>审批</th><th>操作</th></tr></thead>
+    <tbody>
+      <% applications.forEach(item => { %>
+        <tr>
+          <td><%= item.id %></td>
+          <td><a href="/applications/<%= item.token %>"><%= item.visitor_name %></a><br><small><%= item.visitor_phone %></small></td>
+          <td><%= item.applicant_name %><br><small><%= item.department_name %></small></td>
+          <td><%= dayjs(item.visit_start).format('YYYY-MM-DD HH:mm') %><br><small>至 <%= dayjs(item.visit_end).format('YYYY-MM-DD HH:mm') %></small></td>
+          <td><span class="status <%= item.status.toLowerCase() %>"><%= item.status %></span></td>
+          <td><%= item.approver_name || '-' %><br><small><%= item.approved_at ? dayjs(item.approved_at).format('YYYY-MM-DD HH:mm') : '' %></small></td>
+          <td>
+            <form method="post" action="/admin/applications/<%= item.id %>/delete" onsubmit="return confirm('确认删除该申请？')">
+              <button class="danger" type="submit">删除</button>
+            </form>
+          </td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
+</section>
+
+<%- include('partials/footer') %>

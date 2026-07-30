@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= title || '校园访客审批平台' %></title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">校园访客审批平台</a>
+    <nav>
+      <a href="/">访客申请</a>
+      <a href="/screen">大屏展示</a>
+      <% if (currentUser) { %>
+        <a href="/dashboard">工作台</a>
+        <a href="/approvals">审批</a>
+        <% if (currentUser.role === 'ADMIN') { %>
+          <a href="/admin/departments">部门</a>
+          <a href="/admin/users">账号</a>
+          <a href="/admin/applications">申请管理</a>
+        <% } %>
+        <form class="inline" method="post" action="/logout">
+          <button class="link-button" type="submit">退出（<%= currentUser.realName %>）</button>
+        </form>
+      <% } else { %>
+        <a href="/login">登录</a>
+      <% } %>
+    </nav>
+  </header>
+  <main class="container">
+    <% if (flash) { %>
+      <div class="alert <%= flash.type %>"><%= flash.message %></div>
+    <% } %>
